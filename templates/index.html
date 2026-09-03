@@ -1655,29 +1655,63 @@
 
         function formatResponse(text) {
 
-            const parts =
-                text.split(/(```[\s\S]*?```)/g);
+    const parts = text.split(/(```[\s\S]*?```)/g);
 
-            return parts.map(function(part) {
+    return parts.map(function(part) {
 
-                if (part.startsWith("```")) {
+        // Code block
+        if (part.startsWith("```")) {
 
-                    let code =
-                        part
-                        .replace(/^```\w*\n?/, "")
-                        .replace(/```$/, "");
+            let code = part
+                .replace(/^```\w*\n?/, "")
+                .replace(/```$/, "");
 
-                    return `
-                        <div class="code-block">${escapeHtml(code)}</div>
-                    `;
-
-                }
-
-                return escapeHtml(part);
-
-            }).join("");
-
+            return `
+                <div class="code-block">${escapeHtml(code)}</div>
+            `;
         }
+
+        // Normal text
+        let formatted = escapeHtml(part);
+
+        // Headings
+        formatted = formatted.replace(
+            /^### (.*)$/gm,
+            '<h3>$1</h3>'
+        );
+
+        formatted = formatted.replace(
+            /^## (.*)$/gm,
+            '<h3>$1</h3>'
+        );
+
+        formatted = formatted.replace(
+            /^# (.*)$/gm,
+            '<h3>$1</h3>'
+        );
+
+        // Bold
+        formatted = formatted.replace(
+            /\*\*(.*?)\*\*/g,
+            '<strong>$1</strong>'
+        );
+
+        // Italic
+        formatted = formatted.replace(
+            /\*(.*?)\*/g,
+            '<em>$1</em>'
+        );
+
+        // Convert line breaks
+        formatted = formatted.replace(
+            /\n/g,
+            '<br>'
+        );
+
+        return formatted;
+
+    }).join("");
+}
 
 
         function escapeHtml(text) {
