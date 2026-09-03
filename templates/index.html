@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PyMentor AI | Python Doubt Solver</title>
+
+    <meta name="description"
+          content="AI-powered Python Doubt Solver using LangChain and Google Gemini">
+
+    <style>
+
+        /* =========================================================
+           GLOBAL
+        ========================================================= */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+
+            --bg: #080b14;
+            --bg-secondary: #0e1320;
+            --card: rgba(17, 24, 39, 0.78);
+
+            --border: rgba(255, 255, 255, 0.08);
+
+            --text: #f8fafc;
+            --muted: #94a3b8;
+
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+
+            --cyan: #22d3ee;
+
+            --user-message: linear-gradient(
+                135deg,
+                #6366f1,
+                #4f46e5
+            );
+
+            --bot-message: #111827;
+
+            --shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+        }
+
+
+        body.light {
+
+            --bg: #eef2ff;
+            --bg-secondary: #ffffff;
+            --card: rgba(255, 255, 255, 0.82);
+
+            --border: rgba(15, 23, 42, 0.1);
+
+            --text: #111827;
+            --muted: #64748b;
+
+            --bot-message: #ffffff;
+
+            --shadow: 0 25px 70px rgba(30, 41, 59, 0.15);
+        }
+
+
+        body {
+
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            min-height: 100vh;
+
+            background:
+                radial-gradient(
+                    circle at 10% 10%,
+                    rgba(99, 102, 241, 0.18),
+                    transparent 30%
+                ),
+
+                radial-gradient(
+                    circle at 90% 80%,
+                    rgba(34, 211, 238, 0.12),
+                    transparent 30%
+                ),
+
+                var(--bg);
+
+            color: var(--text);
+
+            overflow: hidden;
+
+            transition: 0.3s ease;
+        }
+
+
+        /* =========================================================
+           BACKGROUND EFFECTS
+        ========================================================= */
+
+        .background-grid {
+
+            position: fixed;
+
+            inset: 0;
+
+            pointer-events: none;
+
+            opacity: 0.25;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,0.035) 1px,
+                    transparent 1px
+                ),
+
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,0.035) 1px,
+                    transparent 1px
+                );
+
+            background-size: 45px 45px;
+        }
+
+
+        .orb {
+
+            position: fixed;
+
+            border-radius: 50%;
+
+            filter: blur(80px);
+
+            pointer-events: none;
+        }
+
+
+        .orb.one {
+
+            width: 280px;
+            height: 280px;
+
+            background: rgba(99, 102, 241, 0.18);
+
+            top: -100px;
+            left: -80px;
+        }
+
+
+        .orb.two {
+
+            width: 250px;
+            height: 250px;
+
+            background: rgba(34, 211, 238, 0.12);
+
+            right: -80px;
+            bottom: -80px;
+        }
+
+
+        /* =========================================================
+           MAIN APP
+        ========================================================= */
+
+        .app {
+
+            position: relative;
+
+            width: 100%;
+            height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 25px;
+        }
+
+
+        .container {
+
+            width: min(1200px, 100%);
+
+            height: min(900px, 94vh);
+
+            display: grid;
+
+            grid-template-columns: 270px 1fr;
+
+            background: var(--card);
+
+            border: 1px solid var(--border);
+
+            backdrop-filter: blur(25px);
+
+            border-radius: 28px;
+
+            box-shadow: var(--shadow);
+
+            overflow: hidden;
+        }
+
+
+        /* =========================================================
+           SIDEBAR
+        ========================================================= */
+
+        .sidebar {
+
+            padding: 25px;
+
+            background:
+                rgba(255,255,255,0.025);
+
+            border-right: 1px solid var(--border);
+
+            display: flex;
+
+            flex-direction: column;
+        }
+
+
+        .brand {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin-bottom: 35px;
+        }
+
+
+        .brand-icon {
+
+            width: 46px;
+            height: 46px;
+
+            border-radius: 14px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            font-size: 23px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #22d3ee
+                );
+
+            box-shadow:
+                0 10px 30px
+                rgba(99,102,241,0.3);
+        }
+
+
+        .brand h2 {
+
+            font-size: 18px;
+
+            letter-spacing: -0.4px;
+        }
+
+
+        .brand span {
+
+            display: block;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            margin-top: 3px;
+        }
+
+
+        .sidebar-title {
+
+            font-size: 11px;
+
+            color: var(--muted);
+
+            text-transform: uppercase;
+
+            letter-spacing: 1.3px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .quick-list {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 8px;
+        }
+
+
+        .quick-btn {
+
+            border: 1px solid transparent;
+
+            background: transparent;
+
+            color: var(--muted);
+
+            text-align: left;
+
+            padding: 11px 12px;
+
+            border-radius: 12px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+
+            font-size: 13px;
+        }
+
+
+        .quick-btn:hover {
+
+            color: var(--text);
+
+            background: rgba(99,102,241,0.1);
+
+            border-color: var(--border);
+
+            transform: translateX(3px);
+        }
+
+
+        .sidebar-bottom {
+
+            margin-top: auto;
+        }
+
+
+        .status {
+
+            padding: 14px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(34,211,238,0.06);
+
+            border: 1px solid
+                rgba(34,211,238,0.12);
+
+            margin-bottom: 15px;
+        }
+
+
+        .status-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            font-size: 12px;
+        }
+
+
+        .status-dot {
+
+            width: 8px;
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: #22c55e;
+
+            box-shadow:
+                0 0 12px #22c55e;
+
+            animation: pulse 2s infinite;
+        }
+
+
+        @keyframes pulse {
+
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+
+        .status small {
+
+            color: var(--muted);
+
+            display: block;
+
+            margin-top: 7px;
+
+            font-size: 10px;
+        }
+
+
+        .sidebar-actions {
+
+            display: flex;
+
+            gap: 8px;
+        }
+
+
+        .small-btn {
+
+            flex: 1;
+
+            padding: 10px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 11px;
+
+            background: transparent;
+
+            color: var(--muted);
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        .small-btn:hover {
+
+            color: var(--text);
+
+            background: rgba(255,255,255,0.05);
+        }
+
+
+        /* =========================================================
+           CHAT AREA
+        ========================================================= */
+
+        .chat {
+
+            min-width: 0;
+
+            display: flex;
+
+            flex-direction: column;
+        }
+
+
+        .chat-header {
+
+            height: 75px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding: 0 25px;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+
+        .chat-title {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+        }
+
+
+        .ai-avatar {
+
+            width: 40px;
+            height: 40px;
+
+            border-radius: 13px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #8b5cf6
+                );
+
+            font-size: 20px;
+        }
+
+
+        .chat-title h3 {
+
+            font-size: 15px;
+        }
+
+
+        .chat-title p {
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            margin-top: 3px;
+        }
+
+
+        .header-actions {
+
+            display: flex;
+
+            gap: 8px;
+        }
+
+
+        .icon-btn {
+
+            width: 38px;
+            height: 38px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 11px;
+
+            background: transparent;
+
+            color: var(--muted);
+
+            cursor: pointer;
+
+            font-size: 16px;
+
+            transition: 0.2s;
+        }
+
+
+        .icon-btn:hover {
+
+            color: var(--text);
+
+            background:
+                rgba(255,255,255,0.06);
+        }
+
+
+        /* =========================================================
+           MESSAGES
+        ========================================================= */
+
+        .chat-box {
+
+            flex: 1;
+
+            overflow-y: auto;
+
+            padding: 30px;
+
+            scroll-behavior: smooth;
+        }
+
+
+        .chat-box::-webkit-scrollbar {
+
+            width: 6px;
+        }
+
+
+        .chat-box::-webkit-scrollbar-thumb {
+
+            background: rgba(148,163,184,0.2);
+
+            border-radius: 20px;
+        }
+
+
+        .welcome {
+
+            min-height: 100%;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            text-align: center;
+
+            animation: fadeUp 0.7s ease;
+        }
+
+
+        @keyframes fadeUp {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(20px);
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+            }
+        }
+
+
+        .welcome-icon {
+
+            width: 75px;
+            height: 75px;
+
+            border-radius: 24px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            font-size: 36px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(99,102,241,0.2),
+                    rgba(34,211,238,0.12)
+                );
+
+            border: 1px solid var(--border);
+
+            margin-bottom: 20px;
+
+            box-shadow:
+                0 20px 50px
+                rgba(99,102,241,0.15);
+        }
+
+
+        .welcome h1 {
+
+            font-size: clamp(26px, 4vw, 40px);
+
+            letter-spacing: -1.5px;
+
+            margin-bottom: 10px;
+        }
+
+
+        .gradient-text {
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #818cf8,
+                    #22d3ee
+                );
+
+            -webkit-background-clip: text;
+
+            background-clip: text;
+
+            color: transparent;
+        }
+
+
+        .welcome p {
+
+            max-width: 550px;
+
+            color: var(--muted);
+
+            line-height: 1.6;
+
+            font-size: 14px;
+        }
+
+
+        .suggestions {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 10px;
+
+            width: min(650px, 100%);
+
+            margin-top: 28px;
+        }
+
+
+        .suggestion {
+
+            padding: 14px;
+
+            text-align: left;
+
+            background: rgba(255,255,255,0.025);
+
+            border: 1px solid var(--border);
+
+            border-radius: 14px;
+
+            color: var(--text);
+
+            cursor: pointer;
+
+            transition: 0.25s;
+
+            font-size: 12px;
+        }
+
+
+        .suggestion:hover {
+
+            border-color:
+                rgba(99,102,241,0.45);
+
+            background:
+                rgba(99,102,241,0.08);
+
+            transform: translateY(-2px);
+        }
+
+
+        .suggestion strong {
+
+            display: block;
+
+            margin-bottom: 5px;
+
+            font-size: 13px;
+        }
+
+
+        .suggestion span {
+
+            color: var(--muted);
+        }
+
+
+        /* =========================================================
+           MESSAGE
+        ========================================================= */
+
+        .message {
+
+            display: flex;
+
+            gap: 12px;
+
+            margin-bottom: 25px;
+
+            animation: messageIn 0.3s ease;
+        }
+
+
+        @keyframes messageIn {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(8px);
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+            }
+        }
+
+
+        .message.user {
+
+            justify-content: flex-end;
+        }
+
+
+        .message-avatar {
+
+            flex-shrink: 0;
+
+            width: 34px;
+            height: 34px;
+
+            border-radius: 11px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            font-size: 15px;
+        }
+
+
+        .message.bot .message-avatar {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #22d3ee
+                );
+        }
+
+
+        .message.user .message-avatar {
+
+            background:
+                rgba(255,255,255,0.08);
+        }
+
+
+        .message-wrapper {
+
+            max-width: min(78%, 750px);
+        }
+
+
+        .message-name {
+
+            font-size: 10px;
+
+            color: var(--muted);
+
+            margin-bottom: 6px;
+        }
+
+
+        .message-content {
+
+            padding: 14px 17px;
+
+            border-radius: 17px;
+
+            line-height: 1.65;
+
+            font-size: 14px;
+
+            white-space: pre-wrap;
+
+            word-break: break-word;
+        }
+
+
+        .bot .message-content {
+
+            background: var(--bot-message);
+
+            border: 1px solid var(--border);
+
+            border-top-left-radius: 4px;
+        }
+
+
+        .user .message-content {
+
+            background: var(--user-message);
+
+            color: white;
+
+            border-top-right-radius: 4px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(79,70,229,0.18);
+        }
+
+
+        .copy-btn {
+
+            margin-top: 7px;
+
+            border: none;
+
+            background: transparent;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            cursor: pointer;
+
+            padding: 4px 0;
+        }
+
+
+        .copy-btn:hover {
+
+            color: var(--primary-light);
+        }
+
+
+        /* =========================================================
+           TYPING
+        ========================================================= */
+
+        .typing {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            margin-bottom: 20px;
+        }
+
+
+        .typing-dots {
+
+            display: flex;
+
+            gap: 4px;
+        }
+
+
+        .typing-dots span {
+
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: var(--primary-light);
+
+            animation:
+                typing 1.2s infinite;
+        }
+
+
+        .typing-dots span:nth-child(2) {
+
+            animation-delay: 0.15s;
+        }
+
+
+        .typing-dots span:nth-child(3) {
+
+            animation-delay: 0.3s;
+        }
+
+
+        @keyframes typing {
+
+            0%, 60%, 100% {
+
+                transform: translateY(0);
+
+                opacity: 0.4;
+            }
+
+            30% {
+
+                transform: translateY(-5px);
+
+                opacity: 1;
+            }
+        }
+
+
+        /* =========================================================
+           INPUT
+        ========================================================= */
+
+        .input-section {
+
+            padding: 18px 25px 22px;
+
+            border-top: 1px solid var(--border);
+        }
+
+
+        .input-box {
+
+            position: relative;
+
+            display: flex;
+
+            align-items: flex-end;
+
+            gap: 10px;
+
+            padding: 8px;
+
+            background:
+                rgba(255,255,255,0.035);
+
+            border: 1px solid var(--border);
+
+            border-radius: 17px;
+
+            transition: 0.2s;
+        }
+
+
+        .input-box:focus-within {
+
+            border-color:
+                rgba(99,102,241,0.55);
+
+            box-shadow:
+                0 0 0 4px
+                rgba(99,102,241,0.08);
+        }
+
+
+        #question {
+
+            flex: 1;
+
+            resize: none;
+
+            min-height: 45px;
+
+            max-height: 130px;
+
+            padding: 13px 12px;
+
+            border: none;
+
+            outline: none;
+
+            background: transparent;
+
+            color: var(--text);
+
+            font-family: inherit;
+
+            font-size: 14px;
+
+            line-height: 1.5;
+        }
+
+
+        #question::placeholder {
+
+            color: var(--muted);
+        }
+
+
+        #askButton {
+
+            width: 46px;
+            height: 46px;
+
+            border: none;
+
+            border-radius: 13px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #4f46e5
+                );
+
+            color: white;
+
+            cursor: pointer;
+
+            font-size: 18px;
+
+            transition: 0.2s;
+
+            flex-shrink: 0;
+        }
+
+
+        #askButton:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 10px 25px
+                rgba(99,102,241,0.35);
+        }
+
+
+        #askButton:disabled {
+
+            opacity: 0.5;
+
+            cursor: not-allowed;
+
+            transform: none;
+
+            box-shadow: none;
+        }
+
+
+        .input-footer {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            margin-top: 8px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+
+        /* =========================================================
+           CODE
+        ========================================================= */
+
+        .code-block {
+
+            background: #05070c;
+
+            border: 1px solid rgba(255,255,255,0.08);
+
+            border-radius: 10px;
+
+            padding: 14px;
+
+            margin: 10px 0;
+
+            overflow-x: auto;
+
+            font-family:
+                Consolas,
+                "Courier New",
+                monospace;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            white-space: pre;
+        }
+
+
+        /* =========================================================
+           MOBILE
+        ========================================================= */
+
+        @media (max-width: 800px) {
+
+            body {
+
+                overflow: auto;
+            }
+
+
+            .app {
+
+                padding: 0;
+            }
+
+
+            .container {
+
+                height: 100vh;
+
+                border-radius: 0;
+
+                grid-template-columns: 1fr;
+            }
+
+
+            .sidebar {
+
+                display: none;
+            }
+
+
+            .chat-header {
+
+                padding: 0 15px;
+            }
+
+
+            .chat-box {
+
+                padding: 20px 15px;
+            }
+
+
+            .input-section {
+
+                padding: 12px 15px 15px;
+            }
+
+
+            .message-wrapper {
+
+                max-width: 85%;
+            }
+
+
+            .suggestions {
+
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="background-grid"></div>
+
+    <div class="orb one"></div>
+
+    <div class="orb two"></div>
+
+
+    <div class="app">
+
+        <div class="container">
+
+
+            <!-- =================================================
+                 SIDEBAR
+            ================================================== -->
+
+            <aside class="sidebar">
+
+                <div class="brand">
+
+                    <div class="brand-icon">
+                        🐍
+                    </div>
+
+                    <div>
+
+                        <h2>PyMentor AI</h2>
+
+                        <span>Python Learning Assistant</span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="sidebar-title">
+                    Quick Questions
+                </div>
+
+
+                <div class="quick-list">
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('What is a Python variable?')">
+
+                        📦 Python Variables
+
+                    </button>
+
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('Explain Python lists with examples.')">
+
+                        📋 Python Lists
+
+                    </button>
+
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('What is object-oriented programming in Python?')">
+
+                        🧩 OOP in Python
+
+                    </button>
+
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('Explain Python functions with an example.')">
+
+                        ⚙️ Functions
+
+                    </button>
+
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('What is the difference between a list and a tuple in Python?')">
+
+                        🔍 List vs Tuple
+
+                    </button>
+
+
+                    <button
+                        class="quick-btn"
+                        onclick="quickQuestion('Explain Python exception handling with an example.')">
+
+                        🛠️ Exception Handling
+
+                    </button>
+
+                </div>
+
+
+                <div class="sidebar-bottom">
+
+                    <div class="status">
+
+                        <div class="status-row">
+
+                            <span class="status-dot"></span>
+
+                            <span>AI System Online</span>
+
+                        </div>
+
+                        <small>
+                            Powered by Google Gemini + LangChain
+                        </small>
+
+                    </div>
+
+
+                    <div class="sidebar-actions">
+
+                        <button
+                            class="small-btn"
+                            onclick="clearChat()">
+
+                            🗑️ Clear
+
+                        </button>
+
+
+                        <button
+                            class="small-btn"
+                            onclick="toggleTheme()">
+
+                            ◐ Theme
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+
+            <!-- =================================================
+                 CHAT
+            ================================================== -->
+
+            <main class="chat">
+
+
+                <header class="chat-header">
+
+                    <div class="chat-title">
+
+                        <div class="ai-avatar">
+                            🤖
+                        </div>
+
+                        <div>
+
+                            <h3>Python AI Assistant</h3>
+
+                            <p>
+                                Ask questions and learn Python
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="header-actions">
+
+                        <button
+                            class="icon-btn"
+                            title="Clear chat"
+                            onclick="clearChat()">
+
+                            ↻
+
+                        </button>
+
+
+                        <button
+                            class="icon-btn"
+                            title="Change theme"
+                            onclick="toggleTheme()">
+
+                            ◐
+
+                        </button>
+
+                    </div>
+
+                </header>
+
+
+                <!-- CHAT MESSAGES -->
+
+                <div
+                    class="chat-box"
+                    id="chatBox">
+
+
+                    <!-- WELCOME -->
+
+                    <div
+                        class="welcome"
+                        id="welcome">
+
+                        <div class="welcome-icon">
+                            🧠
+                        </div>
+
+
+                        <h1>
+
+                            Learn Python with
+
+                            <span class="gradient-text">
+                                AI
+                            </span>
+
+                        </h1>
+
+
+                        <p>
+
+                            Your intelligent Python learning
+                            companion. Ask a question, request
+                            an example, or get help debugging
+                            your code.
+
+                        </p>
+
+
+                        <div class="suggestions">
+
+
+                            <button
+                                class="suggestion"
+                                onclick="quickQuestion('Explain what a Python dictionary is with a simple example.')">
+
+                                <strong>
+                                    📚 Learn a concept
+                                </strong>
+
+                                <span>
+                                    Explain Python dictionaries
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="suggestion"
+                                onclick="quickQuestion('Write a Python program to check whether a number is prime.')">
+
+                                <strong>
+                                    💻 Generate code
+                                </strong>
+
+                                <span>
+                                    Create a prime number program
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="suggestion"
+                                onclick="quickQuestion('What is the difference between for loop and while loop in Python?')">
+
+                                <strong>
+                                    🔎 Compare concepts
+                                </strong>
+
+                                <span>
+                                    For loop vs while loop
+                                </span>
+
+                            </button>
+
+
+                            <button
+                                class="suggestion"
+                                onclick="quickQuestion('How can I handle errors in Python?')">
+
+                                <strong>
+                                    🛠️ Solve a problem
+                                </strong>
+
+                                <span>
+                                    Learn exception handling
+                                </span>
+
+                            </button>
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- INPUT -->
+
+                <section class="input-section">
+
+                    <div class="input-box">
+
+                        <textarea
+                            id="question"
+                            rows="1"
+                            placeholder="Ask your Python question..."
+                            maxlength="2000"></textarea>
+
+
+                        <button
+                            id="askButton"
+                            title="Send question">
+
+                            ↑
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="input-footer">
+
+                        <span>
+                            Enter to send • Shift + Enter for new line
+                        </span>
+
+                        <span id="counter">
+                            0 / 2000
+                        </span>
+
+                    </div>
+
+                </section>
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        /* =====================================================
+           ELEMENTS
+        ===================================================== */
+
+        const questionInput =
+            document.getElementById("question");
+
+        const askButton =
+            document.getElementById("askButton");
+
+        const chatBox =
+            document.getElementById("chatBox");
+
+        const welcome =
+            document.getElementById("welcome");
+
+        const counter =
+            document.getElementById("counter");
+
+
+        /* =====================================================
+           CHARACTER COUNTER
+        ===================================================== */
+
+        questionInput.addEventListener(
+            "input",
+            function () {
+
+                counter.textContent =
+                    `${questionInput.value.length} / 2000`;
+
+                questionInput.style.height = "auto";
+
+                questionInput.style.height =
+                    Math.min(
+                        questionInput.scrollHeight,
+                        130
+                    ) + "px";
+
+            }
+        );
+
+
+        /* =====================================================
+           FORMAT AI RESPONSE
+        ===================================================== */
+
+        function formatResponse(text) {
+
+            const parts =
+                text.split(/(```[\s\S]*?```)/g);
+
+            return parts.map(function(part) {
+
+                if (part.startsWith("```")) {
+
+                    let code =
+                        part
+                        .replace(/^```\w*\n?/, "")
+                        .replace(/```$/, "");
+
+                    return `
+                        <div class="code-block">${escapeHtml(code)}</div>
+                    `;
+
+                }
+
+                return escapeHtml(part);
+
+            }).join("");
+
+        }
+
+
+        function escapeHtml(text) {
+
+            const div =
+                document.createElement("div");
+
+            div.textContent = text;
+
+            return div.innerHTML;
+        }
+
+
+        /* =====================================================
+           ADD MESSAGE
+        ===================================================== */
+
+        function addMessage(text, type) {
+
+            if (welcome) {
+
+                welcome.style.display = "none";
+
+            }
+
+
+            const message =
+                document.createElement("div");
+
+            message.className =
+                `message ${type}`;
+
+
+            const avatar =
+                document.createElement("div");
+
+            avatar.className =
+                "message-avatar";
+
+            avatar.textContent =
+                type === "bot" ? "🤖" : "👤";
+
+
+            const wrapper =
+                document.createElement("div");
+
+            wrapper.className =
+                "message-wrapper";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className =
+                "message-name";
+
+            name.textContent =
+                type === "bot"
+                    ? "PyMentor AI"
+                    : "You";
+
+
+            const content =
+                document.createElement("div");
+
+            content.className =
+                "message-content";
+
+
+            if (type === "bot") {
+
+                content.innerHTML =
+                    formatResponse(text);
+
+            } else {
+
+                content.textContent =
+                    text;
+
+            }
+
+
+            wrapper.appendChild(name);
+
+            wrapper.appendChild(content);
+
+
+            if (type === "bot") {
+
+                const copy =
+                    document.createElement("button");
+
+                copy.className =
+                    "copy-btn";
+
+                copy.textContent =
+                    "📋 Copy answer";
+
+
+                copy.onclick =
+                    function () {
+
+                        navigator.clipboard.writeText(text);
+
+                        copy.textContent =
+                            "✓ Copied!";
+
+                        setTimeout(
+                            () => copy.textContent =
+                                "📋 Copy answer",
+                            1500
+                        );
+
+                    };
+
+
+                wrapper.appendChild(copy);
+
+            }
+
+
+            message.appendChild(avatar);
+
+            message.appendChild(wrapper);
+
+
+            if (type === "user") {
+
+                message.insertBefore(
+                    wrapper,
+                    avatar
+                );
+
+            }
+
+
+            chatBox.appendChild(message);
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+        }
+
+
+        /* =====================================================
+           TYPING INDICATOR
+        ===================================================== */
+
+        function showTyping() {
+
+            const typing =
+                document.createElement("div");
+
+            typing.className =
+                "typing";
+
+            typing.id =
+                "typing";
+
+
+            typing.innerHTML = `
+
+                <div class="message-avatar">
+                    🤖
+                </div>
+
+                <span>PyMentor AI is thinking</span>
+
+                <div class="typing-dots">
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                </div>
+
+            `;
+
+
+            chatBox.appendChild(typing);
+
+            chatBox.scrollTop =
+                chatBox.scrollHeight;
+        }
+
+
+        function removeTyping() {
+
+            const typing =
+                document.getElementById("typing");
+
+            if (typing) {
+
+                typing.remove();
+
+            }
+        }
+
+
+        /* =====================================================
+           ASK QUESTION
+        ===================================================== */
+
+        async function askQuestion() {
+
+            const question =
+                questionInput.value.trim();
+
+
+            if (!question) {
+
+                questionInput.focus();
+
+                return;
+
+            }
+
+
+            addMessage(
+                question,
+                "user"
+            );
+
+
+            questionInput.value = "";
+
+            questionInput.style.height =
+                "auto";
+
+            counter.textContent =
+                "0 / 2000";
+
+
+            askButton.disabled = true;
+
+            askButton.textContent =
+                "•••";
+
+
+            showTyping();
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/ask",
+                        {
+
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    question:
+                                        question
+                                })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                removeTyping();
+
+
+                if (data.answer) {
+
+                    addMessage(
+                        data.answer,
+                        "bot"
+                    );
+
+                } else {
+
+                    addMessage(
+                        data.error ||
+                        "Something went wrong.",
+                        "bot"
+                    );
+
+                }
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                removeTyping();
+
+
+                addMessage(
+                    "Unable to connect to the AI server. Please make sure the Flask application is running.",
+                    "bot"
+                );
+
+            }
+
+
+            askButton.disabled = false;
+
+            askButton.textContent =
+                "↑";
+
+            questionInput.focus();
+
+        }
+
+
+        /* =====================================================
+           QUICK QUESTIONS
+        ===================================================== */
+
+        function quickQuestion(question) {
+
+            questionInput.value =
+                question;
+
+            questionInput.dispatchEvent(
+                new Event("input")
+            );
+
+            askQuestion();
+
+        }
+
+
+        /* =====================================================
+           ENTER KEY
+        ===================================================== */
+
+        questionInput.addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                ) {
+
+                    event.preventDefault();
+
+                    askQuestion();
+
+                }
+
+            }
+        );
+
+
+        askButton.addEventListener(
+            "click",
+            askQuestion
+        );
+
+
+        /* =====================================================
+           CLEAR CHAT
+        ===================================================== */
+
+        function clearChat() {
+
+            chatBox.innerHTML = "";
+
+            chatBox.appendChild(
+                welcome
+            );
+
+            welcome.style.display =
+                "flex";
+
+        }
+
+
+        /* =====================================================
+           THEME
+        ===================================================== */
+
+        function toggleTheme() {
+
+            document.body.classList.toggle(
+                "light"
+            );
+
+        }
+
+
+        /* =====================================================
+           INITIAL FOCUS
+        ===================================================== */
+
+        questionInput.focus();
+
+    </script>
+
+</body>
+
+</html>
